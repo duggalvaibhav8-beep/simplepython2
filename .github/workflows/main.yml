@@ -1,0 +1,45 @@
+name: Auto Deploy Python App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy Project
+        run: |
+          sudo rm -rf /var/www/simplepython2/*
+          sudo cp -r . /var/www/simplepython2/
+
+      - name: Setup Virtual Environment
+        run: |
+          cd /var/www/simplepython2
+
+          python3 -m venv venv
+
+          source venv/bin/activate
+
+          pip install --upgrade pip
+
+          pip install -r requirements.txt
+
+          pip install gunicorn
+
+      - name: Restart Flask App
+        run: |
+          cd /var/www/simplepython2
+
+          source venv/bin/activate
+
+          pm2 delete flaskapp || true
+
+          pm2 start "gunicorn --bind 127.0.0.1:5000 app:app" --name flaskapp
+
+          pm2 save
